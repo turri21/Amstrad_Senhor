@@ -172,19 +172,19 @@ module emu
 	input         OSD_STATUS
 );
 
-//assign ADC_BUS  = 'Z;
-//assign USER_OUT = '1;
-//assign {UART_RTS, UART_TXD, UART_DTR} = 0;
-//assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
-//assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
+assign ADC_BUS  = 'Z;
+assign USER_OUT = '1;
+assign {UART_RTS, UART_TXD, UART_DTR} = 0;
+assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
+assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
 
-//assign LED_USER  = mf2_en | ioctl_download | tape_led | tape_adc_act;
-//assign LED_DISK  = 0;
-//assign LED_POWER = 0;
-//assign BUTTONS   = 0;
-//assign VGA_SCALER= 0;
-//assign VGA_DISABLE = 0;
-//assign HDMI_FREEZE = 0;
+assign LED_USER  = mf2_en | ioctl_download | tape_led | tape_adc_act;
+assign LED_DISK  = 0;
+assign LED_POWER = 0;
+assign BUTTONS   = 0;
+assign VGA_SCALER= 0;
+assign VGA_DISABLE = 0;
+assign HDMI_FREEZE = 0;
 
 // Status Bit Map:
 // 0         1         2         3          4         5         6
@@ -961,12 +961,12 @@ assign AUDIO_R   = {audio_sys_r + (playcity_ena ? playcity_audio_r : audio_sys_r
 wire tape_play = tape_ready ? tape_read : tape_adc;
 
 wire tape_adc, tape_adc_act;
-//ltc2308_tape ltc2308_tape
-//(
-//	.clk(CLK_50M),
-//	.ADC_BUS(ADC_BUS),
-//	.dout(tape_adc),
-//	.active(tape_adc_act)
-//);
+ltc2308_tape ltc2308_tape
+(
+	.clk(CLK_50M),
+	.ADC_BUS(ADC_BUS),
+	.dout(tape_adc),
+	.active(tape_adc_act)
+);
 
 endmodule
