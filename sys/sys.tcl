@@ -166,6 +166,7 @@ set_location_assignment PIN_AG6 -to HDMI_TX_D[21]
 set_location_assignment PIN_AF9 -to HDMI_TX_D[22]
 set_location_assignment PIN_AE8 -to HDMI_TX_D[23]
 set_location_assignment PIN_T8 -to HDMI_TX_HS
+set_location_assignment PIN_AF11 -to HDMI_TX_INT
 set_location_assignment PIN_V13 -to HDMI_TX_VS
  
 #============================================================
