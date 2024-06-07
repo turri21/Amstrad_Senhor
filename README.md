@@ -1,3 +1,6 @@
+-=(Amstrad_Senhor notes)=-
+
+Tested: Working Video 720p, 1080p & Sound. Use Quartus v13 to synthesize.
 
 # Amstrad CPC 6128 for MiSTer
 This core has been started as a port of [CoreAmstrad by Renaud Hélias](https://github.com/renaudhelias/CoreAmstrad) but every module has been either rewritten or replaced so, now it can be treated as a completely new core.
