@@ -23,29 +23,31 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS_WEAK_PULLUP "AS OUTPUT DRIVI
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_CLK1_50
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_CLK2_50
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FPGA_CLK3_50
+
+#Senhor: Clocks should be like that, otherise there will be improper signal at 720p.
 set_location_assignment PIN_V11 -to FPGA_CLK1_50
-set_location_assignment PIN_E11 -to FPGA_CLK2_50
-set_location_assignment PIN_Y13 -to FPGA_CLK3_50
+set_location_assignment PIN_Y13 -to FPGA_CLK2_50
+set_location_assignment PIN_E11 -to FPGA_CLK3_50
 
 #============================================================
 # SPI SD
 #============================================================
-set_location_assignment PIN_AE15 -to SD_SPI_CS
+#set_location_assignment PIN_AE15 -to SD_SPI_CS
 #set_location_assignment PIN_AH8  -to SD_SPI_MISO
 #set_location_assignment PIN_AG8  -to SD_SPI_CLK
-set_location_assignment PIN_U13  -to SD_SPI_MOSI
-set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to SD_SPI*
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_SPI*
-set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_SPI*
+#set_location_assignment PIN_U13  -to SD_SPI_MOSI
+#set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to SD_SPI*
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SD_SPI*
+#set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_SPI*
 
 #============================================================
 # I2C LEDS/BUTTONS
 #============================================================
-set_location_assignment PIN_U14 -to IO_SCL
+#set_location_assignment PIN_U14 -to IO_SCL
 #set_location_assignment PIN_AG9 -to IO_SDA
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to IO_S*
-set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to IO_S*
-set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to IO_S*
+#set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to IO_S*
+#set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to IO_S*
+#set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to IO_S*
  
 #============================================================
 # SDRAM
