@@ -1,7 +1,3 @@
--=(Amstrad_Senhor notes)=-
-
-Tested: Working Video 720p, 1080p & Sound.
-Use Quartus v13 to synthesize.
 
 # Amstrad CPC 6128 for MiSTer
 This core has been started as a port of [CoreAmstrad by Renaud Hélias](https://github.com/renaudhelias/CoreAmstrad) but every module has been either rewritten or replaced so, now it can be treated as a completely new core.
@@ -69,6 +65,11 @@ Control keys:
 * Alt+F2 - unload the tape (turn off the LED)
 
 CDT playback respects the tape motor ON/OFF state.
+
+For loading a tape you need to type these commands
+
+|TAPE + Enter (switch on tape mode) 
+RUN" + Enter for loading a .CDT file after selected it from OSD menù 
 
 ## RAM
 CPC664 model has only 64KB RAM - use this model for programs not compatible with 128KB RAM.
