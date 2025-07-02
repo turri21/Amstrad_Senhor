@@ -47,31 +47,33 @@ set_global_assignment -name ROUTER_CLOCKING_TOPOLOGY_ANALYSIS ON
 set_global_assignment -name ECO_OPTIMIZE_TIMING ON
 set_global_assignment -name PERIPHERY_TO_CORE_PLACEMENT_AND_ROUTING_OPTIMIZATION ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING ON
-set_global_assignment -name ALM_REGISTER_PACKING_EFFORT LOW
+set_global_assignment -name ALM_REGISTER_PACKING_EFFORT MEDIUM
 set_global_assignment -name SEED 1
+
+#set_global_assignment -name VERILOG_MACRO "MISTER_FB=1"
+
+#enable it only if 8bit indexed mode is used in core
+#set_global_assignment -name VERILOG_MACRO "MISTER_FB_PALETTE=1"
+
+#do not enable DEBUG_NOHDMI in release!
+#set_global_assignment -name VERILOG_MACRO "MISTER_DEBUG_NOHDMI=1"
+
+# disable bilinear filtering when downscaling
+#set_global_assignment -name VERILOG_MACRO "MISTER_DOWNSCALE_NN=1"
+
+# disable adaptive scanline filtering
+#set_global_assignment -name VERILOG_MACRO "MISTER_DISABLE_ADAPTIVE=1"
+
+#use only 1MB per frame for scaler to free ~21MB DDR3 RAM
+#set_global_assignment -name VERILOG_MACRO "MISTER_SMALL_VBUF=1"
+
+# Disable YC / Composite output to save some resources
+#set_global_assignment -name VERILOG_MACRO "MISTER_DISABLE_YC=1"
+
+# Disable ALSA audio output to save some resources
+#set_global_assignment -name VERILOG_MACRO "MISTER_DISABLE_ALSA=1"
 
 source sys/sys.tcl
 source sys/sys_analog.tcl
 source files.qip
-
-set_global_assignment -name QIP_FILE rtl/T80/T80.qip
-set_global_assignment -name QIP_FILE rtl/GA40010/ga40010.qip
-set_global_assignment -name VERILOG_FILE rtl/sdram.v
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/u765/u765.sv
-set_global_assignment -name VHDL_FILE rtl/tzxplayer.vhd
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/YM2149.sv
-set_global_assignment -name QIP_FILE rtl/playcity/Z80CTC/z80ctc.qip
-set_global_assignment -name VERILOG_FILE rtl/playcity/playcity.v
-set_global_assignment -name VERILOG_FILE rtl/i8255.v
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/color_mix.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/hid.sv
-set_global_assignment -name VERILOG_FILE rtl/multiplay_mouse.v
-set_global_assignment -name VERILOG_FILE rtl/symbiface_mouse.v
-set_global_assignment -name VERILOG_FILE rtl/kempston_mouse.v
-set_global_assignment -name VERILOG_FILE rtl/UM6845R.v
-set_global_assignment -name VERILOG_FILE rtl/crt_filter.v
-set_global_assignment -name VERILOG_FILE rtl/Amstrad_MMU.v
-set_global_assignment -name VERILOG_FILE rtl/Amstrad_motherboard.v
-set_global_assignment -name SDC_FILE Amstrad.sdc
-set_global_assignment -name SYSTEMVERILOG_FILE Amstrad.sv
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
