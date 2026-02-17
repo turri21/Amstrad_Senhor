@@ -207,6 +207,7 @@ localparam CONF_STR = {
 	"-;",
 	"F4,CDT,Load tape;",
 	"F5,ROM,Load Dandanator ROM;",
+   "R[32],Unload Dandanator ROM;",
 	"OK,Tape sound,Disabled,Enabled;",
 	"-;",
 	"OI,Joysticks swap,No,Yes;",
@@ -244,7 +245,6 @@ localparam CONF_STR = {
 
 	"-;",
 	"R0,Reset & apply model;",
-	"R[32],Reset & Detach Cartridge;",
 	"J,Fire 1,Fire 2,Fire 3;",
 	"V,v",`BUILD_DATE
 };
