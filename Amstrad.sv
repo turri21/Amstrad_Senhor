@@ -208,6 +208,7 @@ localparam CONF_STR = {
 	"F4,CDT,Load tape;",
 	"F5,ROM,Load Dandanator ROM;",
 	"F6,SNA,Load snapshot;",
+	"F7,E??,Load CPC464 ROM;",
 	"OK,Tape sound,Disabled,Enabled;",
 	"-;",
 	"O[62:61],SNAC,Off,Player 1,Player 2;",
@@ -242,7 +243,7 @@ localparam CONF_STR = {
 	"P2OGH,FDC,Original,Fast,Disabled;",
 	"P2-;",
 	"P2oAC,Distributor,Amstrad,Orion,Schneider,Awa,Solavox,Saisho,Triumph,Isp;",
-	"P2O4,Model,CPC 6128,CPC 664;",
+	"P2O[5:4],Model,CPC 6128,CPC 664,CPC 464;",
 	"P2OV,Tape progressbar,Off,On;",
 
 	"-;",
@@ -381,7 +382,7 @@ hps_io #(.CONF_STR(CONF_STR), .VDNUM(2)) hps_io
 	.ioctl_wait(ioctl_wait)
 );
 
-wire        rom_download = ioctl_download && (ioctl_index[4:0] < 4);
+wire        rom_download = ioctl_download && ((ioctl_index[4:0] < 4) || (ioctl_index == 7));
 wire        tape_download = ioctl_download && (ioctl_index == 4);
 wire        dan_download = ioctl_download && (ioctl_index == 5);
 wire        sna_download = ioctl_download && (ioctl_index == 6);
@@ -404,7 +405,7 @@ reg   [7:0] sna_ppi_control = 8'h9b;
 reg   [3:0] sna_psg_addr = 4'd0;
 reg [127:0] sna_psg_regs = 128'd0;
 reg  [15:0] sna_mem_size = 16'd64;
-reg         sna_model = 1'b0;
+reg   [1:0] sna_model = 2'd0;
 reg   [2:0] sna_apply_cnt = 3'd0;
 reg         sna_finish_pending = 1'b0;
 reg         old_sna_download_reset = 1'b0;
@@ -424,6 +425,14 @@ reg  [15:0] sna_chunk_out = 16'd0;
 reg   [1:0] sna_rle_state = 2'd0;
 reg   [7:0] sna_rle_count = 8'd0;
 reg   [7:0] sna_rle_value = 8'd0;
+
+function automatic [1:0] valid_model(input [1:0] requested);
+	begin
+		valid_model = (requested == 2'd3) ? 2'd0 : requested;
+	end
+endfunction
+
+wire [1:0] menu_model = valid_model(status[5:4]);
 
 // A 8MB bank is split to 2 halves
 // Fist 4 MB is OS ROM + RAM pages + MF2 ROM
@@ -448,7 +457,7 @@ always @(posedge clk_sys) begin
 	if(!romdl_wait && sna_rle_count && sna_chunk_mem && (sna_chunk_bank < 4'd2)) begin
 		romdl_wait <= 1;
 		boot_dout <= sna_rle_value;
-		boot_bank <= {1'b0, sna_model};
+		boot_bank <= sna_model;
 		boot_a[22:14] <= 9'd8 + {5'd0, sna_chunk_bank[1:0], sna_chunk_out[15:14]};
 		boot_a[13:0] <= sna_chunk_out[13:0];
 		sna_chunk_out <= sna_chunk_out + 1'd1;
@@ -471,7 +480,7 @@ always @(posedge clk_sys) begin
 		boot_a[13:0] <= ioctl_addr[13:0];
 
 		if (sna_mem_wr) begin
-			boot_bank <= {1'b0, sna_model};
+			boot_bank <= sna_model;
 			boot_a[22:14] <= 9'd8 + {6'd0, sna_mem_addr[16:14]};
 			boot_a[13:0] <= sna_mem_addr[13:0];
 		end
@@ -482,7 +491,7 @@ always @(posedge clk_sys) begin
 		else if(ioctl_index) begin
 			boot_a[22]    <= page[8];
 			boot_a[21:14] <= page[7:0] + ioctl_addr[21:14];
-			boot_bank     <= {1'b0, &ioctl_index[7:6]};
+			boot_bank     <= (ioctl_index == 7) ? 2'd2 : {1'b0, &ioctl_index[7:6]};
 		end
 		else begin
 			case(ioctl_addr[24:14])
@@ -490,12 +499,15 @@ always @(posedge clk_sys) begin
 					1,5: boot_a[22:14] <= 9'h100; //BASIC
 					2,6: boot_a[22:14] <= 9'h107; //AMSDOS
 					3,7: boot_a[22:14] <= 9'h0ff; //MF2
+					8:   boot_a[22:14] <= 9'h000; //CPC464 OS
+					9:   boot_a[22:14] <= 9'h100; //CPC464 BASIC
 			  default:    romdl_wait <= 0;
 			endcase
 
 			case(ioctl_addr[24:14])
 			  0,1,2,3: boot_bank <= 0; //CPC6128
 			  4,5,6,7: boot_bank <= 1; //CPC664
+			  8,9:     boot_bank <= 2; //CPC464
 			endcase
 		end
 	end
@@ -578,12 +590,14 @@ always @(posedge clk_sys) begin
 			8'h6b: sna_mem_size[7:0]    <= ioctl_dout;
 			8'h6c: begin
 				sna_mem_size[15:8] <= ioctl_dout;
-				if({ioctl_dout, sna_mem_size[7:0]} > 16'd64) sna_model <= 1'b0;
+				if({ioctl_dout, sna_mem_size[7:0]} > 16'd64) sna_model <= 2'd0;
+				else if(sna_cpu_dir[79:64] == 16'h0038) sna_model <= 2'd2;
 			end
 			8'h6d: begin
 				case(ioctl_dout)
-					8'd0, 8'd1, 8'd5: ; // Keep the selected core model for 64K/Plus-64 snapshots; there is no true CPC464 model here.
-					8'd2, 8'd4, 8'd6: sna_model <= 1'b0; // Use the 128K map for 6128/6128 Plus/GX snapshots.
+					8'd0: sna_model <= 2'd2; // CPC464
+					8'd1: sna_model <= 2'd1; // CPC664
+					8'd2, 8'd4, 8'd6: sna_model <= 2'd0; // 6128/Plus/GX snapshots need the 128K map.
 				endcase
 			end
 		endcase
@@ -601,7 +615,7 @@ always @(posedge clk_sys) begin
 		sna_ga_palette <= 136'd0;
 		sna_psg_regs <= 128'd0;
 		sna_mem_size <= 16'd64;
-		sna_model <= status[4];
+		sna_model <= menu_model;
 		sna_ppi_control <= 8'h9b;
 		sna_chunk_name <= 32'd0;
 		sna_chunk_len <= 32'd0;
@@ -657,7 +671,7 @@ always @(posedge clk_sys) begin
 				if(!sna_chunk_rle) begin
 					romdl_wait <= 1;
 					boot_dout <= ioctl_dout;
-					boot_bank <= {1'b0, sna_model};
+					boot_bank <= sna_model;
 					boot_a[22:14] <= 9'd8 + {5'd0, sna_chunk_bank[1:0], sna_chunk_out[15:14]};
 					boot_a[13:0] <= sna_chunk_out[13:0];
 					sna_chunk_out <= sna_chunk_out + 1'd1;
@@ -669,7 +683,7 @@ always @(posedge clk_sys) begin
 							else begin
 								romdl_wait <= 1;
 								boot_dout <= ioctl_dout;
-								boot_bank <= {1'b0, sna_model};
+								boot_bank <= sna_model;
 								boot_a[22:14] <= 9'd8 + {5'd0, sna_chunk_bank[1:0], sna_chunk_out[15:14]};
 								boot_a[13:0] <= sna_chunk_out[13:0];
 								sna_chunk_out <= sna_chunk_out + 1'd1;
@@ -679,7 +693,7 @@ always @(posedge clk_sys) begin
 							if(ioctl_dout == 8'd0) begin
 								romdl_wait <= 1;
 								boot_dout <= 8'he5;
-								boot_bank <= {1'b0, sna_model};
+								boot_bank <= sna_model;
 								boot_a[22:14] <= 9'd8 + {5'd0, sna_chunk_bank[1:0], sna_chunk_out[15:14]};
 								boot_a[13:0] <= sna_chunk_out[13:0];
 								sna_chunk_out <= sna_chunk_out + 1'd1;
@@ -694,7 +708,7 @@ always @(posedge clk_sys) begin
 							sna_rle_value <= ioctl_dout;
 							romdl_wait <= 1;
 							boot_dout <= ioctl_dout;
-							boot_bank <= {1'b0, sna_model};
+							boot_bank <= sna_model;
 							boot_a[22:14] <= 9'd8 + {5'd0, sna_chunk_bank[1:0], sna_chunk_out[15:14]};
 							boot_a[13:0] <= sna_chunk_out[13:0];
 							sna_chunk_out <= sna_chunk_out + 1'd1;
@@ -753,10 +767,10 @@ sdram sdram
 	.oe  (reset ? 1'b0      : mem_rd & ~mf2_ram_en),
 	.we  (reset ? boot_wr   : mem_wr & ~mf2_ram_en & ~mf2_rom_en),
 	.addr(reset ? boot_a    : mf2_rom_en ? {9'h0ff, cpu_addr[13:0]} : dan_ena ? {4'd0, dan_bank, cpu_addr[13:0]} : ram_a),
-	.bank(reset ? boot_bank : dan_ena ? 2'b11 : {1'b0, model}),
+	.bank(reset ? boot_bank : dan_ena ? 2'b11 : model),
 	.din (reset ? boot_dout : cpu_dout),
 	.dout(ram_dout),
-	.vram_bank({1'b0, model}),
+	.vram_bank(model),
 	.vram_addr({2'b10,vram_addr,1'b0}),
 	.vram_dout(vram_dout),
 
@@ -769,12 +783,12 @@ sdram sdram
 	.tape_rd_ack(tape_data_ack)
 );
 
-reg model = 0;
+reg [1:0] model = 2'd0;
 reg reset;
 
 always @(posedge clk_sys) begin
 	if(sna_load) model <= sna_model;
-	else if(reset) model <= status[4];
+	else if(reset) model <= menu_model;
 	old_sna_download_reset <= sna_download;
 	reset <= RESET | status[0] | status[32] | buttons[1] | rom_download | key_reset | dan_download |
 	         sna_download | sna_finish_pending | (old_sna_download_reset & ~sna_download) | (sna_apply_cnt > 3'd2);
@@ -1157,7 +1171,7 @@ Amstrad_motherboard motherboard
 	.vram_addr(vram_addr),
 
 	.rom_map(rom_map),
-	.ram64k(model),
+	.ram64k(model != 2'd0),
 	.mem_rd(mem_rd),
 	.mem_wr(mem_wr),
 	.mem_addr(ram_a),
