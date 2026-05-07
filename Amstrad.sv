@@ -300,7 +300,7 @@ wire  [7:0] ioctl_dout;
 wire        ioctl_download;
 wire  [7:0] ioctl_index;
 wire [31:0] ioctl_file_ext;
-wire        ioctl_wait = romdl_wait;
+wire        ioctl_wait;
 
 wire [10:0] ps2_key;
 wire [24:0] ps2_mouse;
@@ -426,6 +426,8 @@ reg   [1:0] sna_rle_state = 2'd0;
 reg   [7:0] sna_rle_count = 8'd0;
 reg   [7:0] sna_rle_value = 8'd0;
 
+assign ioctl_wait = romdl_wait | (sna_download && |sna_rle_count && (sna_rle_state == 2'd0));
+
 function automatic [1:0] valid_model(input [1:0] requested);
 	begin
 		valid_model = (requested == 2'd3) ? 2'd0 : requested;
@@ -454,7 +456,7 @@ always @(posedge clk_sys) begin
 	reg       old_sna_download;
 	reg  	  old_st0 = 0;
 
-	if(!romdl_wait && sna_rle_count && sna_chunk_mem && (sna_chunk_bank < 4'd2)) begin
+	if(!romdl_wait && sna_rle_count && (sna_rle_state == 2'd0) && sna_chunk_mem && (sna_chunk_bank < 4'd2)) begin
 		romdl_wait <= 1;
 		boot_dout <= sna_rle_value;
 		boot_bank <= sna_model;
@@ -594,11 +596,14 @@ always @(posedge clk_sys) begin
 				else if(sna_cpu_dir[79:64] == 16'h0038) sna_model <= 2'd2;
 			end
 			8'h6d: begin
-				case(ioctl_dout)
-					8'd0: sna_model <= 2'd2; // CPC464
-					8'd1: sna_model <= 2'd1; // CPC664
-					8'd2, 8'd4, 8'd6: sna_model <= 2'd0; // 6128/Plus/GX snapshots need the 128K map.
-				endcase
+				if(sna_mem_size > 16'd64) sna_model <= 2'd0;
+				else begin
+					case(ioctl_dout)
+						8'd0: sna_model <= 2'd2; // CPC464
+						8'd1: sna_model <= 2'd1; // CPC664
+						8'd2, 8'd4, 8'd6: sna_model <= 2'd0; // 6128/Plus/GX snapshots need the 128K map.
+					endcase
+				end
 			end
 		endcase
 
@@ -632,7 +637,7 @@ always @(posedge clk_sys) begin
 		sna_rle_value <= 8'd0;
 		sna_finish_pending <= 1'b0;
 	end
-	if(sna_download && ioctl_wr && (ioctl_addr >= sna_chunk_start)) begin
+	if(sna_download && ioctl_wr && !romdl_wait && (!sna_rle_count || (sna_rle_state == 2'd2)) && (ioctl_addr >= sna_chunk_start)) begin
 		if(!sna_chunk_data) begin
 			case(sna_chunk_hdr)
 				3'd0: sna_chunk_name[31:24] <= ioctl_dout;
@@ -656,6 +661,8 @@ always @(posedge clk_sys) begin
 					sna_chunk_rle <= (next_len != 32'd65536);
 					sna_chunk_finish <= 1'b0;
 					sna_chunk_bank <= next_name[3:0];
+					if((next_name[31:24] == "M") && (next_name[23:16] == "E") &&
+					   (next_name[15:8] == "M") && (next_name[7:0] == "1")) sna_model <= 2'd0;
 					sna_chunk_out <= 16'd0;
 					sna_rle_state <= 2'd0;
 					sna_rle_count <= 8'd0;
