@@ -168,14 +168,14 @@ module emu
 	// 1 - D-/TX
 	// 2..6 - USR2..USR6
 	// Set USER_OUT to 1 to read from USER_IN.
-	input   [6:0] USER_IN,
-	output  [6:0] USER_OUT,
+	output  [7:0] USER_PP,
+	input   [7:0] USER_IN,
+	output  [7:0] USER_OUT,
 
 	input         OSD_STATUS
 );
 
 assign ADC_BUS  = 'Z;
-assign USER_OUT = '1;
 assign {UART_RTS, UART_TXD, UART_DTR} = 0;
 assign {SD_SCK, SD_MOSI, SD_CS} = 'Z;
 assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = 0;
@@ -208,6 +208,8 @@ localparam CONF_STR = {
 	"F4,CDT,Load tape;",
 	"F5,ROM,Load Dandanator ROM;",
 	"OK,Tape sound,Disabled,Enabled;",
+	"-;",
+	"O[62:61],SNAC,Off,Player 1,Player 2;",
 	"-;",
 	"OI,Joysticks swap,No,Yes;",
 	"-;",
@@ -302,12 +304,40 @@ wire [10:0] ps2_key;
 wire [24:0] ps2_mouse;
 
 wire  [1:0] buttons;
-wire  [6:0] joy1;
-wire  [6:0] joy2;
+wire  [6:0] joy1_usb;
+wire  [6:0] joy2_usb;
 wire [63:0] status;
 
 wire        forced_scandoubler;
 wire [21:0] gamma_bus;
+
+wire  [1:0] snac_player = status[62:61];
+wire  [7:0] user_out_db9;
+wire  [7:0] user_pp_db9;
+wire [15:0] joydb_1;
+wire [15:0] joydb_2;
+wire        joydb_1ena;
+wire        joydb_2ena;
+
+joydb joydb
+(
+	.USER_IN(USER_IN),
+	.snac_player(snac_player),
+	.USER_OUT(user_out_db9),
+	.USER_PP(user_pp_db9),
+	.joystick1(joydb_1),
+	.joystick2(joydb_2),
+	.joystick1_en(joydb_1ena),
+	.joystick2_en(joydb_2ena)
+);
+
+assign USER_OUT = user_out_db9;
+assign USER_PP  = user_pp_db9;
+
+wire [6:0] joy1_db9 = OSD_STATUS ? 7'd0 : {joydb_1[10], joydb_1[6], joydb_1[4], joydb_1[3:0]};
+wire [6:0] joy2_db9 = OSD_STATUS ? 7'd0 : {joydb_2[10], joydb_2[6], joydb_2[4], joydb_2[3:0]};
+wire [6:0] joy1     = joydb_1ena ? joy1_db9 : joy1_usb;
+wire [6:0] joy2     = joydb_2ena ? joy2_db9 : joydb_1ena ? joy1_usb : joy2_usb;
 
 hps_io #(.CONF_STR(CONF_STR), .VDNUM(2)) hps_io
 (
@@ -329,8 +359,8 @@ hps_io #(.CONF_STR(CONF_STR), .VDNUM(2)) hps_io
 	.ps2_key(ps2_key),
 	.ps2_mouse(ps2_mouse),
 
-	.joystick_0(joy1),
-	.joystick_1(joy2),
+	.joystick_0(joy1_usb),
+	.joystick_1(joy2_usb),
 
 	.buttons(buttons),
 	.status(status),
