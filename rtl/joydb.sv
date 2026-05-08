@@ -1,10 +1,8 @@
 module joydb
 (
-	input  logic  [7:0] USER_IN,
+	input  logic  [6:0] USER_IN,
 	input  logic  [1:0] snac_player,
 
-	output logic  [7:0] USER_OUT,
-	output logic  [7:0] USER_PP,
 	output logic [15:0] joystick1,
 	output logic [15:0] joystick2,
 	output logic        joystick1_en,
@@ -34,8 +32,5 @@ assign joystick1    = joystick1_en ? joystick : 16'd0;
 assign joystick2    = joystick2_en ? joystick : 16'd0;
 assign joystick1_en = (snac_player == 2'd1);
 assign joystick2_en = (snac_player == 2'd2);
-
-assign USER_OUT = 8'hff;
-assign USER_PP  = 8'd0;
 
 endmodule
